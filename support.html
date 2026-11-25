@@ -72,12 +72,19 @@
 
   <h2>Coming soon</h2>
   <p>Some of what's planned for Nudge. Plans can change, and there are no set dates.</p>
-  <ul>
-    <li><strong>Clash warnings:</strong> a heads-up when you can't get from one event to the next in time.</li>
-    <li><strong>Join meetings from your wrist:</strong> Join buttons for online meetings on the Lock Screen and Apple Watch.</li>
-    <li><strong>Colours for single events:</strong> pick a colour for any one event, whatever its calendar or type.</li>
-    <li><strong>Even larger text:</strong> support for the biggest accessibility text sizes on every screen.</li>
-  </ul>
+  <!-- Filled from the same GitHub Gist the app uses. The items below show if it can't load. -->
+  <div class="status-list" id="roadmap">
+    <div class="status-item"><div class="status-head"><strong>Clash warnings</strong><span class="pill pill-amber">In progress</span></div><p>A heads-up when you can't get from one event to the next in time.</p></div>
+    <div class="status-item"><div class="status-head"><strong>Join meetings from your wrist</strong><span class="pill pill-grey">Planned</span></div><p>Join buttons for online meetings on Apple Watch, like the one on the Lock Screen.</p></div>
+    <div class="status-item"><div class="status-head"><strong>Colours for single events</strong><span class="pill pill-grey">Planned</span></div><p>Pick a colour for any one event, whatever its calendar.</p></div>
+    <div class="status-item"><div class="status-head"><strong>Even larger text</strong><span class="pill pill-grey">Planned</span></div><p>Support for the biggest accessibility text sizes on every screen.</p></div>
+  </div>
+
+  <section id="bugs-section" hidden>
+    <h2>Known bugs</h2>
+    <p>Problems we know about and how far along each fix is. Seeing something not listed? <a href="mailto:nudgecalendar@gmail.com?subject=Nudge%3A%20bug%20report">Report a bug</a>.</p>
+    <div class="status-list" id="bugs"></div>
+  </section>
 
   <h2>Request a feature</h2>
   <p>Ideas are very welcome. Email <a href="mailto:nudgecalendar@gmail.com?subject=Nudge%3A%20feature%20request">nudgecalendar@gmail.com</a>, or use Settings › Help › Request a feature in the app.</p>
@@ -93,6 +100,73 @@
     </nav>
   </div>
 </footer>
+
+<script>
+// The same GitHub Gists the app reads. Edit a Gist and both the app and this page update.
+// Paste the Known bugs Gist's raw link between the quotes once it exists (leave out the
+// long version code after /raw/ so it always shows the latest edit).
+const ROADMAP_URL = "https://gist.githubusercontent.com/NudgeCalendar/616fc73129bc264fbe8643e746662f0b/raw/gistfile1.txt";
+const BUGS_URL = "";
+
+// Same forgiving status words as the app.
+function roadmapStatus(raw) {
+  const s = String(raw || "").toLowerCase().replace(/[_-]/g, " ").trim();
+  if (["in progress", "inprogress", "working on it", "building"].includes(s)) return ["In progress", "amber"];
+  if (["next", "next update", "coming next", "soon"].includes(s)) return ["Next update", "green"];
+  return ["Planned", "grey"];
+}
+function bugStatus(raw) {
+  const s = String(raw || "").toLowerCase().replace(/[_-]/g, " ").trim();
+  if (["fixing", "amber", "in progress", "working on it"].includes(s)) return ["Fixing", "amber"];
+  if (["fixed", "green", "done", "resolved"].includes(s)) return ["Fixed", "green"];
+  return ["Known", "red"];
+}
+
+function render(list, items, statusFor) {
+  list.replaceChildren(...items.map(item => {
+    const [label, colour] = statusFor(item.status);
+    const row = document.createElement("div");
+    row.className = "status-item";
+    const head = document.createElement("div");
+    head.className = "status-head";
+    const title = document.createElement("strong");
+    title.textContent = item.title || "";
+    const pill = document.createElement("span");
+    pill.className = "pill pill-" + colour;
+    pill.textContent = label;
+    head.append(title, pill);
+    const detail = document.createElement("p");
+    detail.textContent = item.detail || "";
+    row.append(head, detail);
+    return row;
+  }));
+}
+
+async function load(url) {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(res.status);
+  const file = await res.json();
+  return Array.isArray(file.items) ? file.items : [];
+}
+
+load(ROADMAP_URL)
+  .then(items => { if (items.length) render(document.getElementById("roadmap"), items, roadmapStatus); })
+  .catch(() => {});
+
+if (BUGS_URL) {
+  load(BUGS_URL).then(items => {
+    const list = document.getElementById("bugs");
+    if (items.length) {
+      render(list, items, bugStatus);
+    } else {
+      const none = document.createElement("p");
+      none.textContent = "Nothing known right now.";
+      list.replaceChildren(none);
+    }
+    document.getElementById("bugs-section").hidden = false;
+  }).catch(() => {});
+}
+</script>
 
 </body>
 </html>
